@@ -4,12 +4,41 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace StockExchangeNotificationService
+namespace WebSocketNotificationService
 {
-
-    internal class WSDecoder : IWsDecoder
+    internal class NotificationDecoderResult
     {
-        public string DecodeMessage(byte[] bytes)
+        public WebSocketOption Option { get; set; }
+        public string Payload { get; set; }
+        public byte[] Bytes
+        {
+            get { return Encoding.UTF8.GetBytes(Payload); }
+        }
+    }
+    internal static class NotificationDecoder 
+    {
+        public static NotificationDecoderResult DecodeMessage(byte[] bytes)
+        {
+            string message = Encoding.UTF8.GetString(bytes);
+
+            if (Regex.IsMatch(message, "^GET", RegexOptions.IgnoreCase))
+            {
+                return new NotificationDecoderResult
+                {
+                    Option = WebSocketOption.Handshake,
+                    Payload = DecodeHandshake(message)
+                };
+            }
+            else
+            {
+                return new NotificationDecoderResult
+                {
+                    Option = bytes[0].GetOption(),
+                    Payload = DecodePayload(bytes)
+                };
+            }
+        }
+        private static string DecodePayload(byte[] bytes)
         {
             bool mask = (bytes[1] & 0b10000000) != 0; // must be true, "All messages from the client to the server have this bit set"
 
@@ -18,7 +47,6 @@ namespace StockExchangeNotificationService
 
             if (msglen == 126)
             {
-                
                 msglen = BitConverter.ToUInt16(new byte[] { bytes[3], bytes[2] }, 0);
                 offset = 4;
             }
@@ -33,15 +61,10 @@ namespace StockExchangeNotificationService
             for (int i = 0; i < msglen; ++i)
                 decoded[i] = (byte)(bytes[offset + i] ^ masks[i % 4]);
 
-            //if(bytes.Length == 6)
-            //{
-            //    Console.WriteLine($"IN:{Encoding.UTF8.GetString(bytes)}, OUT:{Encoding.UTF8.GetString(decoded)}");
-            //}
-
             return Encoding.UTF8.GetString(decoded);
 
         }
-        public byte[] DecodeHandshake(string message)
+        private static string DecodeHandshake(string message)
         {
             //Console.WriteLine("=====Handshaking from client=====\n{0}", message);
 
@@ -55,23 +78,12 @@ namespace StockExchangeNotificationService
             string swkaSha1Base64 = Convert.ToBase64String(swkaSha1);
 
             // HTTP/1.1 defines the sequence CR LF as the end-of-line marker
-            return Encoding.UTF8.GetBytes(
+            return 
                 "HTTP/1.1 101 Switching Protocols\r\n" +
                 "Connection: Upgrade\r\n" +
                 "Upgrade: websocket\r\n" +
-                "Sec-WebSocket-Accept: " + swkaSha1Base64 + "\r\n\r\n");
+                "Sec-WebSocket-Accept: " + swkaSha1Base64 + "\r\n\r\n";
         }
-        public WsDecoderResult DecodePayload(byte[] bytes)
-        {
-            WSEncoder.WebSocketOption option = WSEncoder.GetOption(bytes[0]);
-            string message = DecodeMessage(bytes);
-            message = message.Trim().Replace("\n", "");
-
-            return new WsDecoderResult
-            {
-                Option = option,
-                Payload = message
-            };
-        }
+       
     }
 }

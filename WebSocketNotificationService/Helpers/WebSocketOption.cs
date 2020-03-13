@@ -1,49 +1,49 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Net.WebSockets;
 
-namespace StockExchangeNotificationService
+namespace WebSocketNotificationService
 {
-    public partial class WSEncoder
+    public enum WebSocketOption
     {
-        public enum WebSocketOption
-        {
-            ContinuationFrame = 0,
-            TextFrame = 1,
-            BinaryFrame = 2,
-            ConnectionClose = 8,
-            Ping = 9,
-            Pong = 10
+        ContinuationFrame = 0,
+        TextFrame = 1,
+        BinaryFrame = 2,
+        ConnectionClose = 8,
+        Ping = 9,
+        Pong = 10,
+        Handshake = 21
+    }
 
-        }
+    public enum WebSocketMessageType : byte
+    {
+        Text = 0,
+        Binary = 1,
+        Close = 2,
+        Ping = 3,
+        Pong = 4
 
-        public enum WebSocketMessageTypeEx : byte
-        {
-            Text = 0,
-            Binary = 1,
-            Close = 2,
-            Ping = 3,
-            Pong = 4
+    }
 
-        }
-        public static WebSocketOption GetOption(byte opcode)
+    internal static class Extentions
+    {
+       
+        public static WebSocketOption GetOption(this byte opcode)
         {
             return Enum.Parse<WebSocketOption>(((byte)(opcode & 0b00001111)).ToString());
         }
 
-        public static byte GetOption(WebSocketMessageTypeEx type)
+        public static byte GetOption(this WebSocketMessageType type)
         {
             switch(type)
             {
-                case WebSocketMessageTypeEx.Text:
+                case WebSocketMessageType.Text:
                     return (byte)WebSocketOption.TextFrame;
-                case WebSocketMessageTypeEx.Binary:
+                case WebSocketMessageType.Binary:
                     return (byte)WebSocketOption.TextFrame;
-                case WebSocketMessageTypeEx.Close:
+                case WebSocketMessageType.Close:
                     return (byte)WebSocketOption.ConnectionClose;
-                case WebSocketMessageTypeEx.Ping:
+                case WebSocketMessageType.Ping:
                     return (byte)WebSocketOption.Ping;
-                case WebSocketMessageTypeEx.Pong:
+                case WebSocketMessageType.Pong:
                     return (byte)WebSocketOption.Pong;
             }
 

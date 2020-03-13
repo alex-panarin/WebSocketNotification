@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace StockExchangeNotificationService
+namespace WebSocketNotificationService
 {
 
-    internal class WSMessageProcessor : IWSMessageProcessor
+    internal class MessageProcessor : IMessageProcessor
     {
         private class QueueItem
         {
@@ -19,11 +20,11 @@ namespace StockExchangeNotificationService
         }
         private static readonly ConcurrentQueue<QueueItem> _queue = new ConcurrentQueue<QueueItem>();
 
-        private readonly IWsRepository _repository;
+        private readonly ISessionRepository _repository;
         private readonly ManualResetEventSlim _event;
         private readonly CancellationTokenSource _tokenSource;
 
-        public WSMessageProcessor(IWsRepository repository)
+        public MessageProcessor(ISessionRepository repository)
         {
             _repository = repository;
             _event = new ManualResetEventSlim();
@@ -56,17 +57,11 @@ namespace StockExchangeNotificationService
                         {
                             if (_queue.TryDequeue(out QueueItem qi))
                             {
-                                foreach (var ws in _repository.GetSessions(qi.Id))
+                                var sessions = _repository.GetSessions().Where(s => s.Id != qi.Id);
+
+                                foreach (var ws in sessions)
                                 {
-                                    try
-                                    {
-                                        ws.SendMessage(qi.Message);
-                                    }
-                                    catch() // TODO:
-                                    {
-
-                                    }
-
+                                    ws.SendMessage(qi.Message);
                                 }
                             }
                         }

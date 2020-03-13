@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -10,12 +11,19 @@ namespace WebSocketNotificationService
             CreateHostBuilder(args).Build().Run();
         }
 
+        public static IConfiguration Configuration { get; private set; }
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddLogging();
-                    services.AddHostedService<Worker>();
+                    Configuration = hostContext.Configuration;
+
+                    services
+                        .AddLogging()
+                        .AddHostedService<NotificatinService>()
+                        .AddSingleton<ISessionRepository, SessionRepository>()
+                        .AddSingleton<IMessageProcessor, MessageProcessor>();
                 });
     }
 }

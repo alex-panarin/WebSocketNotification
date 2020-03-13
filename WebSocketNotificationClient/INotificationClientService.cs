@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace StockExchangeNotificationClient
+namespace WebSocketNotificationClient
 {  
     public delegate void MessageRecievedEventHandler(INotificationClientService sender, NotificationMessage message); 
     public interface INotificationClientService : IDisposable
@@ -8,6 +8,6 @@ namespace StockExchangeNotificationClient
         void CloseConnection();
         void OpenConnection(Uri url);
         void SendMessage(string message);
-        event  MessageRecievedEventHandler EventMessage;
+        event MessageRecievedEventHandler EventMessage;
     }
 }

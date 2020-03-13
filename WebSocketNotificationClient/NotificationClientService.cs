@@ -1,4 +1,4 @@
-﻿using StockExchangeNotification;
+﻿
 using System;
 using System.Diagnostics;
 using System.Net.WebSockets;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace StockExchangeNotificationClient
+namespace WebSocketNotificationClient
 {
     public sealed class NotificationClientService : IDisposable, INotificationClientService
     {
@@ -22,16 +22,12 @@ namespace StockExchangeNotificationClient
         private ClientWebSocket _webSocket;
         private readonly INotificationFactory _factory;
         private CancellationTokenSource cancellation;
-        private MessageRecievedEventHandler EventMessage;
+
+        public event MessageRecievedEventHandler EventMessage;
+
         public NotificationClientService()
         {
             _factory = new NotificationFactory();
-        }
-
-        event MessageRecievedEventHandler INotificationClientService.EventMessage
-        {
-            add { EventMessage += value; }
-            remove { EventMessage -= value; }
         }
 
         public void OpenConnection(Uri url)

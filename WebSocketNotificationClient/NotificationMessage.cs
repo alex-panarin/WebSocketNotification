@@ -1,4 +1,4 @@
-﻿namespace StockExchangeNotificationClient
+﻿namespace WebSocketNotificationClient
 {
     public enum NotificationMessageReasons
     {

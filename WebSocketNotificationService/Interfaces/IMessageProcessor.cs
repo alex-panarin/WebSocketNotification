@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace StockExchangeNotificationService
+namespace WebSocketNotificationService
 {
-
-    internal interface IWSMessageProcessor
+    public interface IMessageProcessor
     {
         void ProocessMessage(string excludeId, string message);
         void Stop();

@@ -1,17 +1,14 @@
-﻿using StockExchangeNotificationService.Helpers;
-using System;
+﻿using System;
 using System.IO;
-using System.Net.WebSockets;
 using System.Text;
+using WebSocketNotificationService.Helpers;
 
-namespace StockExchangeNotificationService
+namespace WebSocketNotificationService
 {
-    public partial class WSEncoder : IWSEncoder
+
+    public static class NotificationEncoder 
     {
-        public WSEncoder()
-        {
-        }
-        public byte[] EncodeMessage(WebSocketMessageTypeEx messageType, string message, bool isLastFrame = true)
+        public static byte[] EncodeMessage(WebSocketMessageType messageType, string message, bool isLastFrame = true)
         {
             byte[] msg = Encoding.UTF8.GetBytes(message);
 
@@ -20,7 +17,7 @@ namespace StockExchangeNotificationService
             using MemoryStream memoryStream = new MemoryStream(buffer);
 
             byte finBitSetAsByte = isLastFrame ? (byte)0x80 : (byte)0x00;
-            byte byte1 = (byte)(finBitSetAsByte | GetOption(messageType));
+            byte byte1 = (byte)(finBitSetAsByte | messageType.GetOption());
             memoryStream.WriteByte(byte1);
 
             // NOTE:  A server must not mask any frames that it sends to the client.!!!
@@ -37,7 +34,7 @@ namespace StockExchangeNotificationService
             {
                 byte byte2 = (byte)(maskBitSetAsByte | 126);
                 memoryStream.WriteByte(byte2);
-                WSHelper.WriteUShort((ushort)msg.Length, memoryStream);
+                memoryStream.WriteUShort((ushort)msg.Length);
             }
             else
             {
@@ -48,7 +45,6 @@ namespace StockExchangeNotificationService
 
             return buffer;
         }
-
 
     }
 }
