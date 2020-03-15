@@ -16,7 +16,7 @@ namespace UniversalNotificationClient.DataExchange
         internal async Task<NotificationRequest> WriteAsync()
         {
             ArraySegment<byte> bytes = 
-                Bytes == null || Bytes.Count != 0 
+                Bytes != null && Bytes.Count > 0 
                 ? Bytes 
                 : Encoding.UTF8.GetBytes(Payload);
 
