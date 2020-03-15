@@ -1,3 +1,4 @@
 # WebSocketNotification
 
-# Web Socket test client and service
+Web Socket notification client and service.
+For test purposes and used like educational materials.
