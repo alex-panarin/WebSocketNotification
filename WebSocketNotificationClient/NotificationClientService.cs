@@ -1,178 +1,80 @@
-﻿
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace WebSocketNotificationClient
 {
-    public sealed class NotificationClientService : IDisposable, INotificationClientService
+    public sealed class NotificationClientService : INotificationClientService
     {
-        private class ReconnectException : Exception
-        {
-            public ReconnectException()
-                : base("RECONNECT")
-            {
-
-            }
-        }
-
-        private ClientWebSocket _webSocket;
-        private readonly INotificationFactory _factory;
-        private CancellationTokenSource cancellation;
-
-        public event MessageRecievedEventHandler EventMessage;
-
+        private readonly CancellationTokenSource _tokenSource;
         public NotificationClientService()
         {
-            _factory = new NotificationFactory();
+            Client = new ClientWebSocket();
+            _tokenSource = new CancellationTokenSource();
         }
-
+        public event MessageRecievedEventHandler EventMessage;
+        public void CloseConnection()
+        {
+            CloseAsync();
+        }
+        public void Dispose()
+        {
+            IsDisposed = true;
+        }
         public void OpenConnection(Uri url)
         {
             try
             {
-                Task.Run(() => EnsureConnectAsync(url)).ConfigureAwait(true);
+                if (IsConnected) return;
+
+                ConnectAsync(url);
             }
-            catch(ReconnectException)
+            catch(Exception x)
             {
-                
+                OnSendAction(NotificationFactory.Create(Notifications.Error, x.ToString()));
             }
-        }
-        public void CloseConnection()
-        {
-            Task.Run(() => CloseAsync()).ConfigureAwait(true);
         }
         public void SendMessage(string message)
         {
-            Task.Run(() => SendPayloadAsync(_factory.Create(Notifications.Notify, message))).ConfigureAwait(true);
+            SendAsync(message);
         }
 
+        private ClientWebSocket Client { get; }
         private bool IsConnected
         {
             get
             {
-                return _webSocket != null
-                    && (_webSocket.State == WebSocketState.Open
-                    || _webSocket.State == WebSocketState.CloseSent
-                    || _webSocket.State == WebSocketState.CloseReceived);
-
+                return
+                    Client.State == WebSocketState.Open ||
+                    Client.State == WebSocketState.Connecting;
             }
         }
-        private bool IsClosedByHand { get; set; }
         private bool IsDisposed { get; set; }
+        private async void ConnectAsync(Uri url)
+        {
+            await Client.ConnectAsync(url, _tokenSource.Token);
 
-        private async Task SendPayloadAsync(NotificationPayload payload)
-        {
-            try
-            {
-                if (IsConnected)
-                {
-                    byte[] toSend = Encoding.UTF8.GetBytes(payload.ToJSON());
-                    await _webSocket.SendAsync(new ArraySegment<byte>(toSend), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
-            }
-            catch (Exception x)
-            {
-                await CloseAsync();
-                OnSendAction(NotificationMessageReasons.Error, x.ToString());
-            }
+            await RecieveMessageLoopAsync();
         }
-        private async Task EnsureConnectAsync(Uri url)
+        private async Task RecieveMessageLoopAsync()
         {
-            while (true)
+            OnSendAction(NotificationFactory.Create(Notifications.Connect, string.Empty));
+
+            while (!_tokenSource.IsCancellationRequested && IsConnected)
             {
+                var buffer = WebSocket.CreateClientBuffer(4096, 4096);
                 try
                 {
-                    if (IsConnected) return;
+                    WebSocketReceiveResult result = await Client.ReceiveAsync(buffer, _tokenSource.Token);
 
-                    EnsureCreateWebSocket();
-
-                    IsClosedByHand = false;
-
-                    await _webSocket.ConnectAsync(url, CancellationToken.None);
-
-                    OnSendAction(NotificationMessageReasons.Connected);
-
-                    try
+                    if (result.CloseStatus.HasValue ||
+                        (Client.State == WebSocketState.CloseReceived && result.MessageType == WebSocketMessageType.Close))
                     {
-                        await RecieveNotificationAsync();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        OnSendAction(NotificationMessageReasons.Disconnected);
-
-                        if (IsClosedByHand)
-                        {
-                            await _webSocket?.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                            return;
-                        }
-                    }
-                    catch (Exception x)
-                    {
-                        if (x is WebSocketException we
-                            && we.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-                        {
-                            throw new ReconnectException();
-                            ///Debug.Write($"RECONNECT: {we.Message}");
-                        }
-
-                        throw x;
-                    }
-                }
-                catch (ReconnectException)
-                {
-                    continue;
-                }
-                catch (Exception x)
-                {
-                    await CloseAsync();
-                    OnSendAction(NotificationMessageReasons.Error, x.ToString());
-                    return;
-                }
-            }
-        }
-        private async Task CloseAsync()
-        {
-            if (!IsConnected) return;
-
-            IsClosedByHand = true;
-
-            await _webSocket?.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-
-            cancellation.Cancel();
-        }
-        private async Task RecieveNotificationAsync()
-        {
-            try
-            {
-                NotificationPayload payload = null;
-
-                while (IsConnected && !cancellation.IsCancellationRequested)
-                {
-                    ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[Byte.MaxValue]);
-                    if (payload != null)
-                    {
-                        OnSendAction(NotificationMessageReasons.Message, payload.ToString());
-                        payload = null;
+                        CloseAsync();
                     }
 
-                    WebSocketReceiveResult result = null;
-
-                    try
-                    {
-                        result = await _webSocket.ReceiveAsync(buffer, cancellation.Token);
-                    }
-                    catch (WebSocketException)
-                    {
-                        if (!IsClosedByHand) throw;
-                    }
-
-                    cancellation.Token.ThrowIfCancellationRequested();
-
-                    if (result == null) return;
+                    if (result == null || _tokenSource.IsCancellationRequested) break;
 
                     if (!result.EndOfMessage)
                     {
@@ -181,64 +83,45 @@ namespace WebSocketNotificationClient
 
                     switch (result.MessageType)
                     {
-                        case WebSocketMessageType.Close:
-                            return;
                         case WebSocketMessageType.Text:
-                            payload = _factory.Create(Encoding.UTF8.GetString(buffer.Array));
+                            OnSendAction(NotificationFactory.Create(buffer.Array));
                             break;
                         case WebSocketMessageType.Binary:
                             throw new NotSupportedException("Binary data is not supported");
                     }
                 }
+                catch(OperationCanceledException)
+                {
+                    break;
+                }
+                catch(Exception x)
+                {
+                    OnSendAction(NotificationFactory.Create(Notifications.Error, x.ToString()));
+                }
             }
-            catch (Exception)
-            {
-                throw;
-            }
+
+            OnSendAction(NotificationFactory.Create(Notifications.Disconnect, string.Empty));
         }
-        private void EnsureCreateWebSocket()
+        private async void SendAsync(string message)
         {
-            if (_webSocket != null)
-            {
-                _webSocket.Dispose();
-            }
+            if (!IsConnected) return;
 
-            if (cancellation != null)
-            {
-                cancellation.Dispose();
-            }
-
-            cancellation = new CancellationTokenSource();
-
-            _webSocket = new ClientWebSocket();
-            _webSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
-
+            await Client.SendAsync(new ArraySegment<byte>(NotificationFactory.Create(Notifications.Notify, message).ToJsonByteArray()),
+                WebSocketMessageType.Text, true, _tokenSource.Token);
         }
-        private void OnSendAction(NotificationMessageReasons reason, string message = null)
+        private async void CloseAsync()
         {
-            if (IsDisposed) return;
+            if (!IsConnected) return;
 
-            EventMessage?.Invoke(this, new NotificationMessage(reason, message));
+            _tokenSource.Cancel();
+
+            await Client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Close", CancellationToken.None);
         }
-        public void Dispose()
+        private void OnSendAction(NotificationPayload payload)
         {
             if (IsDisposed) return;
 
-            IsDisposed = true;
-
-            //CloseConnection();
-
-            if (cancellation != null)
-            {
-                cancellation.Dispose();
-            }
-
-            if (_webSocket != null)
-            {
-                _webSocket.Dispose();
-            }
-
-            
+            EventMessage?.Invoke(this, payload);
         }
     }
 }

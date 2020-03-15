@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29905.134
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebSocketNotificationService", "WebSocketNotificationService\WebSocketNotificationService.csproj", "{1E0864E5-02A1-4E91-8F7C-6D8868ABC409}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketNotificationClient", "WebSocketNotificationClient\WebSocketNotificationClient.csproj", "{4A69237F-28E1-4735-B74A-EB9E8CE222E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationTest", "NotificationTest\NotificationTest.csproj", "{5F1E0722-B116-409B-8C90-52D51739578A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalNotificationClient", "UniversalNotificationClient\UniversalNotificationClient.csproj", "{25C7FEAB-023A-40A4-B0BE-67B9A780983B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +19,14 @@ Global
 		{1E0864E5-02A1-4E91-8F7C-6D8868ABC409}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E0864E5-02A1-4E91-8F7C-6D8868ABC409}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E0864E5-02A1-4E91-8F7C-6D8868ABC409}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4A69237F-28E1-4735-B74A-EB9E8CE222E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A69237F-28E1-4735-B74A-EB9E8CE222E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A69237F-28E1-4735-B74A-EB9E8CE222E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A69237F-28E1-4735-B74A-EB9E8CE222E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F1E0722-B116-409B-8C90-52D51739578A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F1E0722-B116-409B-8C90-52D51739578A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F1E0722-B116-409B-8C90-52D51739578A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F1E0722-B116-409B-8C90-52D51739578A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25C7FEAB-023A-40A4-B0BE-67B9A780983B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25C7FEAB-023A-40A4-B0BE-67B9A780983B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25C7FEAB-023A-40A4-B0BE-67B9A780983B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25C7FEAB-023A-40A4-B0BE-67B9A780983B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

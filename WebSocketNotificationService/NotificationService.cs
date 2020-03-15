@@ -8,15 +8,15 @@ using System.Threading.Tasks;
 
 namespace WebSocketNotificationService
 {
-    public sealed class NotificatinService : BackgroundService
+    public sealed class NotificationService : BackgroundService
     {
-        private readonly ILogger<NotificatinService> _logger;
+        private readonly ILogger<NotificationService> _logger;
         private readonly ISessionRepository _repository;
         private readonly IMessageProcessor _processor;
         private readonly TcpListener _listener;
 
-        public NotificatinService(
-            ILogger<NotificatinService> logger, 
+        public NotificationService(
+            ILogger<NotificationService> logger, 
             ISessionRepository repository,
             IMessageProcessor processor)
         {
@@ -24,7 +24,7 @@ namespace WebSocketNotificationService
             _repository = repository;
             _processor = processor;
 
-            int port = int.Parse(Program.Configuration.GetSection("ConnectionEndpoints")["Port"]);
+            int port = int.Parse(Program.Configuration.GetSection("ConnectionEndpoint")["Port"]);
             _listener = new TcpListener(IPAddress.Any, port);
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -41,7 +41,7 @@ namespace WebSocketNotificationService
             }
             catch (Exception x)
             {
-                _logger.LogError(x, "ExecuteAsync");
+                _logger.LogInformation(x, "ExecuteAsync");
             }
 
         }
@@ -67,7 +67,7 @@ namespace WebSocketNotificationService
         }
         private void Session_Error(object sender, Exception e)
         {
-            _logger.LogError(e, "Error in session {0}", ((NotificationSession)sender).Id);
+            _logger.LogInformation(e, "Error in session {0}", ((NotificationSession)sender).Id);
         }
         private void Session_Disconnected(object sender, NotificationSession e)
         {
@@ -78,16 +78,17 @@ namespace WebSocketNotificationService
             e.Disconnected -= Session_Disconnected;
             e.Error -= Session_Error;
 
-            _logger.LogDebug("Client was disconnected by Id: {0}", e.Id);
+            _logger.LogInformation("Client was disconnected by Id: {0}", e.Id);
         }
         private void Session_TextMessageReceived(object sender, string e)
         {
+            _logger.LogInformation("Was received Message: {0}", e);
             _processor.ProocessMessage(((NotificationSession)sender).Id, e);
         }
         private void Session_HandshakeCompleted(object sender, NotificationSession e)
         {
             _repository.Register(e);
-            _logger.LogDebug("Client was connected by Id: {0}", e.Id);
+            _logger.LogInformation("Client was connected by Id: {0}", e.Id);
         }
     }
 }

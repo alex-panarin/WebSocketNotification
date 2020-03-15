@@ -12,7 +12,6 @@ namespace WebSocketNotificationService
     public class NotificationSession
     {
         private readonly CancellationTokenSource _tokenSource;
-
         private TcpClient Client { get; }
         private Stream Stream { get; }
 
@@ -63,9 +62,9 @@ namespace WebSocketNotificationService
                                 OnSendEvent(TextMessageReceived, result.Payload);
                                 break;
                             case WebSocketOption.BinaryFrame:
+                                //throw new NotSupportedException("Binary frame is not supported");
                                 OnSendEvent(BinaryMessageReceived, result.Payload);
                                 break;
-                            //throw new NotSupportedException("Binary frame is not supported");
                             case WebSocketOption.Ping:
                                 Write(WebSocketMessageType.Pong, "");
                                 break;

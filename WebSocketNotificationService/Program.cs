@@ -21,9 +21,10 @@ namespace WebSocketNotificationService
 
                     services
                         .AddLogging()
-                        .AddHostedService<NotificatinService>()
                         .AddSingleton<ISessionRepository, SessionRepository>()
-                        .AddSingleton<IMessageProcessor, MessageProcessor>();
+                        .AddSingleton<IMessageProcessor, MessageProcessor>()
+                        .AddHostedService<NotificationService>();
+                       
                 });
     }
 }

@@ -51,21 +51,21 @@ namespace WebSocketNotificationService
                     {
                         _event.Wait(TimeSpan.FromMinutes(5), _tokenSource.Token);
 
-                        _tokenSource.Token.ThrowIfCancellationRequested();
-
-                        while (_queue.Count > 0)
+                        //while (_queue.Count > 0)
                         {
-                            if (_queue.TryDequeue(out QueueItem qi))
+                            while (_queue.TryDequeue(out QueueItem qi))
                             {
                                 var sessions = _repository.GetSessions().Where(s => s.Id != qi.Id);
 
-                                foreach (var ws in sessions)
+                                foreach (var session in sessions)
                                 {
-                                    ws.SendMessage(qi.Message);
+                                    session.SendMessage(qi.Message);
                                 }
                             }
                         }
-                        
+
+                        _tokenSource.Token.ThrowIfCancellationRequested();
+
                         _event.Reset();
                     }
                     catch(OperationCanceledException)

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WebSocketNotificationService
+namespace UniversalNotificationClient.DataExchange
 {
     public enum WebSocketOption : byte
     {
@@ -25,12 +25,10 @@ namespace WebSocketNotificationService
 
     internal static class Extentions
     {
-       
         public static WebSocketOption GetOption(this byte opcode)
         {
             return Enum.Parse<WebSocketOption>(((byte)(opcode & 0b00001111)).ToString());
         }
-
         public static byte GetOption(this WebSocketMessageType type)
         {
             switch (type)

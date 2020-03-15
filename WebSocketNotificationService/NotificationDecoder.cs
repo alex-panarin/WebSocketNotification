@@ -42,7 +42,7 @@ namespace WebSocketNotificationService
         {
             bool mask = (bytes[1] & 0b10000000) != 0; // must be true, "All messages from the client to the server have this bit set"
 
-            int msglen = bytes[1] - 128; // & 0111 1111
+            int msglen = bytes[1] - 128; // & 0111 1111 // Remove MASK_EXISTS bit 
             int offset = 2;
 
             if (msglen == 126)
@@ -59,7 +59,9 @@ namespace WebSocketNotificationService
             offset += 4;
 
             for (int i = 0; i < msglen; ++i)
+            {
                 decoded[i] = (byte)(bytes[offset + i] ^ masks[i % 4]);
+            }
 
             return Encoding.UTF8.GetString(decoded);
 
